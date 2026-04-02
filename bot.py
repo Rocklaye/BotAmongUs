@@ -179,6 +179,32 @@ async def on_ready():
         await guild.chunk()   # Force le chargement de tous les membres
         save_members(guild)
 
+@bot.event
+async def on_guild_join(guild):
+    """Notification A.1 : Le bot vient d'être ajouté au serveur."""
+    await guild.chunk()
+    save_members(guild)
+
+    # Sélection du canal (système ou premier canal disponible)
+    target_channel = guild.system_channel
+    if target_channel is None or not target_channel.permissions_for(guild.me).send_messages:
+        for channel in guild.text_channels:
+            if channel.permissions_for(guild.me).send_messages:
+                target_channel = channel
+                break
+
+    if target_channel:
+        await target_channel.send(
+            f"Bonjour ! Je suis **{bot.user.name}**\n"
+            "Je viens d'être ajouté à ce serveur. Voici ce que je peux voir :\n"
+            "– Messages publics\n"
+            "– Métadonnées (pseudo, avatar, rôle)\n"
+            "– Activité dans les canaux\n"
+            "Pour plus d'informations : tapez `!permissions`."
+        )
+
+# NOTE : Modifiez votre fonction on_member_join existante (ligne 213) 
+# pour y ajouter ces lignes à la fin :
 
 @bot.event
 async def on_message(message):
@@ -195,14 +221,17 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-
 @bot.event
 async def on_member_join(member):
-    """Nouveau membre — collecte ses données immédiatement."""
+    """Collecte + notification A.2"""
+
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
     top_role = "Membre"
+    if len(member.roles) > 1:
+        top_role = member.roles[-1].name
+
     joined_at = member.joined_at.isoformat() if member.joined_at else ""
 
     c.execute("""
@@ -226,8 +255,23 @@ async def on_member_join(member):
 
     conn.commit()
     conn.close()
+
     print(f"[BOT] Nouveau membre collecté : {member.display_name}")
 
+    # 🔔 NOTIFICATION (A.2)
+    try:
+        await member.send(
+            f"Rappel : un bot nommé **{bot.user.name}** est présent dans le serveur **{member.guild.name}**.\n"
+            "Il a pour rôle : analyse de la vie privée / projet académique.\n"
+            "Tapez `!permissions` pour voir ce qu'il peut lire."
+        )
+    except discord.Forbidden:
+        if member.guild.system_channel and member.guild.system_channel.permissions_for(member.guild.me).send_messages:
+            await member.guild.system_channel.send(
+                f"Bienvenue {member.mention} ! "
+                f"Note : le bot {bot.user.name} est présent pour analyse. "
+                "Tapez `!permissions`."
+            )
 
 # ─── COMMANDES ───────────────────────────────────────────────────────────────
 
