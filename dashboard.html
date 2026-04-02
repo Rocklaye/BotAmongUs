@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BotAmongUs — Privacy Report Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:       #09090b;
+  --bg1:      #111113;
+  --bg2:      #18181b;
+  --bg3:      #232327;
+  --line:     rgba(255,255,255,0.07);
+  --line2:    rgba(255,255,255,0.12);
+  --t1:       #fafafa;
+  --t2:       #a1a1aa;
+  --t3:       #52525b;
+  --red:      #ff4757;
+  --red-dim:  rgba(255,71,87,0.12);
+  --amber:    #f59e0b;
+  --amber-dim:rgba(245,158,11,0.12);
+  --green:    #22c55e;
+  --green-dim:rgba(34,197,94,0.12);
+  --blue:     #3b82f6;
+  --blue-dim: rgba(59,130,246,0.12);
+  --purple:   #a855f7;
+  --mono: 'IBM Plex Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --r: 8px; --r2: 12px;
+}
+html, body { height: 100%; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--t1);
+  display: grid;
+  grid-template-rows: 52px 1fr;
+  grid-template-columns: 210px 1fr;
+  min-height: 100vh;
+  font-size: 14px;
+}
+
+/* topbar */
+#topbar {
+  grid-column: 1/-1;
+  background: var(--bg1);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  padding: 0 18px;
+  gap: 14px;
+}
+.brand {
+  display: flex; align-items: center; gap: 9px;
+  font-family: var(--mono); font-size: 13px; font-weight: 600;
+  letter-spacing: -0.02em; color: var(--t1);
+}
+.brand-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--red); animation: blink 2s ease-in-out infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.brand-sep { color: var(--t3); }
+.api-badge {
+  margin-left: auto; display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 11px; color: var(--t3);
+}
+.api-dot { width:6px; height:6px; border-radius:50%; background:var(--t3); transition:background .3s; }
+.api-dot.ok { background:var(--green); }
+.api-dot.err { background:var(--red); }
+.btn-sm {
+  margin-left: 10px;
+  font-family: var(--mono); font-size: 11px; color: var(--t2);
+  background: var(--bg3); border: 1px solid var(--line2);
+  border-radius: var(--r); padding: 5px 11px; cursor: pointer; transition: all .15s;
+}
+.btn-sm:hover { background: var(--bg2); color: var(--t1); }
+
+/* sidebar */
+#sidebar {
+  background: var(--bg1);
+  border-right: 1px solid var(--line);
+  padding: 16px 0; display: flex; flex-direction: column;
+  gap: 1px; overflow-y: auto;
+}
+.nav-sec {
+  font-family: var(--mono); font-size: 10px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--t3); padding: 14px 18px 5px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 18px;
+  font-size: 13px; color: var(--t2); cursor: pointer;
+  border-left: 2px solid transparent; transition: all .15s; user-select: none;
+}
+.nav-item:hover { background: var(--bg2); color: var(--t1); }
+.nav-item.active { background: rgba(255,71,87,.07); border-left-color: var(--red); color: var(--t1); }
+.nav-ic { width:15px; height:15px; flex-shrink:0; opacity:.65; }
+.nav-count {
+  margin-left: auto; font-family: var(--mono); font-size: 10px;
+  background: var(--bg3); color: var(--t3); padding: 1px 6px; border-radius: 4px;
+}
+.sidebar-foot {
+  margin-top: auto; padding: 14px 18px; border-top: 1px solid var(--line);
+  font-family: var(--mono); font-size: 10px; color: var(--t3); line-height: 1.7;
+}
+
+/* main */
+#main { overflow-y: auto; background: var(--bg); }
+.page { display:none; padding:24px; animation: fi .2s ease; }
+.page.active { display:block; }
+@keyframes fi { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+/* page header */
+.ph { margin-bottom: 20px; }
+.ph-title { font-size: 20px; font-weight: 600; letter-spacing: -.03em; }
+.ph-sub { font-family: var(--mono); font-size: 11px; color: var(--t3); margin-top: 3px; }
+
+/* metric grid */
+.mgrid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px; }
+.metric {
+  background: var(--bg1); border: 1px solid var(--line);
+  border-radius: var(--r2); padding: 15px 16px; position: relative; overflow: hidden;
+}
+.metric::after {
+  content:''; position:absolute; top:0;left:0;right:0; height:1px;
+  background: linear-gradient(90deg,transparent,rgba(255,255,255,.06),transparent);
+}
+.m-label { font-family:var(--mono); font-size:10px; letter-spacing:.08em; text-transform:uppercase; color:var(--t3); margin-bottom:8px; }
+.m-val { font-family:var(--mono); font-size:26px; font-weight:600; letter-spacing:-.04em; color:var(--t1); line-height:1; }
+.m-val.red { color:var(--red); } .m-val.amber { color:var(--amber); }
+.m-val.green { color:var(--green); } .m-val.blue { color:var(--blue); }
+.m-detail { font-family:var(--mono); font-size:10px; color:var(--t3); margin-top:5px; }
+
+/* insights */
+.istrip { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+.insight { background:var(--bg1); border:1px solid var(--line); border-radius:var(--r2); padding:15px; }
+.i-num { font-family:var(--mono); font-size:24px; font-weight:600; letter-spacing:-.04em; color:var(--red); line-height:1; margin-bottom:5px; }
+.i-lbl { font-size:13px; color:var(--t2); line-height:1.4; }
+.i-lbl span { color:var(--t3); font-size:11px; display:block; margin-top:2px; }
+
+/* grid layouts */
+.g2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+
+/* card */
+.card { background:var(--bg1); border:1px solid var(--line); border-radius:var(--r2); padding:16px; }
+.card-title {
+  font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--t3); margin-bottom:14px; display:flex; align-items:center; gap:7px;
+}
+.ctd { width:3px; height:11px; background:var(--red); border-radius:2px; }
+
+/* users grid */
+.ugrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(272px,1fr)); gap:11px; }
+.ucard {
+  background:var(--bg1); border:1px solid var(--line); border-radius:var(--r2);
+  padding:15px; cursor:pointer; transition:border-color .15s, transform .15s;
+}
+.ucard:hover { border-color:var(--line2); transform:translateY(-1px); }
+.uc-hd { display:flex; align-items:center; gap:11px; margin-bottom:13px; }
+.av {
+  width:38px; height:38px; border-radius:50%; background:var(--bg3);
+  display:flex; align-items:center; justify-content:center;
+  font-weight:600; font-size:14px; color:var(--t2); flex-shrink:0; overflow:hidden;
+}
+.av img { width:100%; height:100%; object-fit:cover; }
+.uc-info { flex:1; min-width:0; }
+.uc-name { font-weight:500; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.uc-uname { font-family:var(--mono); font-size:11px; color:var(--t3); margin-top:1px; }
+
+.risk { font-family:var(--mono); font-size:10px; font-weight:600; padding:3px 7px; border-radius:4px; letter-spacing:.05em; white-space:nowrap; }
+.rh { background:var(--red-dim); color:var(--red); }
+.rm { background:var(--amber-dim); color:var(--amber); }
+.rl { background:var(--green-dim); color:var(--green); }
+
+.rbar { height:3px; background:var(--bg3); border-radius:2px; overflow:hidden; margin:11px 0; }
+.rfill { height:100%; border-radius:2px; transition:width .8s cubic-bezier(.16,1,.3,1); }
+
+.ucstats { display:grid; grid-template-columns:1fr 1fr 1fr; gap:7px; }
+.ucst { background:var(--bg2); border-radius:var(--r); padding:8px 9px; }
+.ucst-l { font-family:var(--mono); font-size:9px; text-transform:uppercase; letter-spacing:.06em; color:var(--t3); margin-bottom:2px; }
+.ucst-v { font-family:var(--mono); font-size:14px; font-weight:600; color:var(--t1); }
+
+/* data table */
+.dtable { width:100%; border-collapse:collapse; }
+.dtable th {
+  font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+  color:var(--t3); text-align:left; padding:7px 11px; border-bottom:1px solid var(--line);
+}
+.dtable td { padding:9px 11px; font-size:13px; border-bottom:1px solid rgba(255,255,255,.04); vertical-align:middle; }
+.dtable tr:last-child td { border-bottom:none; }
+.dtable tbody tr:hover td { background:var(--bg2); }
+
+/* mismatches */
+.mm-item { border:1px solid var(--line); border-radius:var(--r2); margin-bottom:10px; overflow:hidden; }
+.mm-head { display:flex; align-items:center; gap:11px; padding:13px 15px; background:var(--bg1); cursor:pointer; user-select:none; }
+.mm-icon { width:26px; height:26px; border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+.sh { background:var(--red-dim); } .sm { background:var(--amber-dim); }
+.mm-type { font-family:var(--mono); font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--t1); flex:1; }
+.mm-sev { font-family:var(--mono); font-size:10px; }
+.mm-sev.h { color:var(--red); } .mm-sev.m { color:var(--amber); }
+.mm-chev { color:var(--t3); font-size:11px; transition:transform .2s; }
+.mm-item.open .mm-chev { transform:rotate(90deg); }
+.mm-body { display:none; padding:0 15px 15px; background:var(--bg1); }
+.mm-item.open .mm-body { display:block; }
+.mm-cols { display:grid; grid-template-columns:1fr 1fr; gap:11px; margin-top:11px; }
+.mm-cl { font-family:var(--mono); font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--t3); margin-bottom:5px; }
+.mm-ex { font-size:13px; color:var(--t2); line-height:1.5; }
+.mm-re { font-size:13px; color:var(--t1); font-weight:500; line-height:1.5; }
+.mm-ref { margin-top:9px; font-family:var(--mono); font-size:10px; color:var(--t3); background:var(--bg2); border-radius:6px; padding:6px 10px; }
+
+/* modal */
+.mbg {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.78);
+  backdrop-filter:blur(6px); z-index:999; align-items:flex-start;
+  justify-content:center; padding:36px 18px; overflow-y:auto;
+}
+.mbg.open { display:flex; }
+.modal {
+  background:var(--bg1); border:1px solid var(--line2); border-radius:14px;
+  width:100%; max-width:840px; padding:26px; position:relative;
+  animation:fi .2s ease; flex-shrink:0;
+}
+.mclose {
+  position:absolute; top:18px; right:18px; width:28px; height:28px;
+  background:var(--bg3); border:1px solid var(--line); border-radius:6px;
+  cursor:pointer; color:var(--t2); font-size:13px;
+  display:flex; align-items:center; justify-content:center; transition:all .15s;
+}
+.mclose:hover { background:var(--red); color:#fff; border-color:var(--red); }
+
+.mgrid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+
+/* timeline */
+.tl { max-height:240px; overflow-y:auto; border:1px solid var(--line); border-radius:var(--r); background:var(--bg); }
+.tl-row {
+  display:grid; grid-template-columns:50px 86px 1fr; gap:9px;
+  padding:7px 11px; border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:12px; align-items:baseline;
+}
+.tl-row:last-child { border-bottom:none; }
+.tl-t { font-family:var(--mono); color:var(--t3); font-size:11px; }
+.tl-c { font-family:var(--mono); color:var(--blue); font-size:11px; }
+.tl-m { color:var(--t2); line-height:1.4; word-break:break-word; }
+
+/* meta list */
+.meta-list { display:flex; flex-direction:column; }
+.meta-row { display:flex; gap:14px; padding:8px 0; border-bottom:1px solid rgba(255,255,255,.04); align-items:center; }
+.meta-row:last-child { border-bottom:none; }
+.meta-k { font-family:var(--mono); font-size:11px; color:var(--t3); text-transform:uppercase; letter-spacing:.06em; width:160px; flex-shrink:0; }
+.meta-v { font-size:13px; color:var(--t1); font-weight:500; flex:1; word-break:break-all; }
+
+/* misc */
+.tag { display:inline-block; background:var(--bg3); border:1px solid var(--line2); border-radius:4px; padding:2px 7px; font-family:var(--mono); font-size:11px; color:var(--t2); }
+.empty { padding:40px; text-align:center; color:var(--t3); font-family:var(--mono); font-size:12px; line-height:1.8; }
+.spin { width:22px; height:22px; border:2px solid var(--bg3); border-top-color:var(--red); border-radius:50%; animation:spin .7s linear infinite; margin:0 auto 10px; }
+@keyframes spin { to{transform:rotate(360deg)} }
+::-webkit-scrollbar { width:4px; height:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--bg3); border-radius:2px; }
+</style>
+</head>
+<body>
+
+<header id="topbar">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    BotAmongUs
+    <span class="brand-sep"> / </span>
+    <span style="color:var(--t2);font-weight:400">bot_among_us</span>
+  </div>
+  <div class="api-badge">
+    <div class="api-dot" id="apiDot"></div>
+    <span id="apiLabel">connexion…</span>
+    <button class="btn-sm" onclick="refreshCurrent()">↻ refresh</button>
+  </div>
+</header>
+
+<nav id="sidebar">
+  <div class="nav-sec">Collecte</div>
+  <div class="nav-item active" onclick="goto('overview',this)">
+    <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+    Vue d'ensemble
+    <span class="nav-count" id="nc-msg">—</span>
+  </div>
+  <div class="nav-item" onclick="goto('users',this)">
+    <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+    Utilisateurs profilés
+    <span class="nav-count" id="nc-usr">—</span>
+  </div>
+  <div class="nav-item" onclick="goto('members',this)">
+    <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="5" cy="5" r="2.5"/><circle cx="11" cy="5" r="2.5"/><path d="M1 14c0-2.8 1.8-5 4-5M15 14c0-2.8-1.8-5-4-5M7 14c0-2.8.9-5 2-5"/></svg>
+    Membres collectés
+    <span class="nav-count" id="nc-mbr">—</span>
+  </div>
+  <div class="nav-sec">Analyse</div>
+  <div class="nav-item" onclick="goto('mismatches',this)">
+    <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/><circle cx="8" cy="8" r="6"/></svg>
+    6 Mismatches
+  </div>
+  <div class="sidebar-foot">
+    Bot Among Us<br>
+    PoPETs 2026(1) · pp. 296–320<br>
+    Chou et al. · NTU + TAU
+  </div>
+</nav>
+
+<main id="main">
+
+  <!-- OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <div class="ph">
+      <div class="ph-title">Vue d'ensemble</div>
+      <div class="ph-sub" id="guildLabel">Connexion à l'API…</div>
+    </div>
+    <div class="mgrid">
+      <div class="metric"><div class="m-label">Messages lus</div><div class="m-val red" id="m-msgs">—</div><div class="m-detail">contenu + métadonnées</div></div>
+      <div class="metric"><div class="m-label">Utilisateurs profilés</div><div class="m-val" id="m-users">—</div><div class="m-detail">username · pseudo · avatar · rôle</div></div>
+      <div class="metric"><div class="m-label">Membres collectés</div><div class="m-val amber" id="m-members">—</div><div class="m-detail">au démarrage du bot</div></div>
+      <div class="metric"><div class="m-label">Canaux surveillés</div><div class="m-val blue" id="m-channels">—</div><div class="m-detail">Message Content Intent</div></div>
+    </div>
+    <div class="istrip">
+      <div class="insight"><div class="i-num">41.7%</div><div class="i-lbl">identifient correctement l'accès d'un bot<span>§4.3 — Bot Among Us</span></div></div>
+      <div class="insight"><div class="i-num">68.4%</div><div class="i-lbl">s'autocensurent après information<span>§4.4.3 — self-censorship</span></div></div>
+      <div class="insight"><div class="i-num">6</div><div class="i-lbl">désalignements attente / réalité<span>Tableau 2 — Contextual Integrity</span></div></div>
+    </div>
+    <div class="g2">
+      <div class="card"><div class="card-title"><div class="ctd"></div>Activité horaire (UTC)</div><canvas id="hourlyChart" height="190"></canvas></div>
+      <div class="card"><div class="card-title"><div class="ctd"></div>Messages par canal</div><canvas id="channelChart" height="190"></canvas></div>
+    </div>
+    <div class="card"><div class="card-title"><div class="ctd"></div>Top utilisateurs — messages captés</div><div id="topUsers"><div class="empty"><div class="spin"></div>chargement…</div></div></div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="page-users">
+    <div class="ph"><div class="ph-title">Utilisateurs profilés</div><div class="ph-sub">Cliquez sur un profil pour son rapport complet</div></div>
+    <div class="ugrid" id="usersGrid"><div class="empty" style="grid-column:1/-1"><div class="spin"></div>chargement…</div></div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div class="page" id="page-members">
+    <div class="ph"><div class="ph-title">Membres collectés</div><div class="ph-sub">Group Metadata — collectée automatiquement à l'arrivée du bot</div></div>
+    <div class="card">
+      <table class="dtable">
+        <thead><tr><th>Avatar</th><th>Display name</th><th>Username</th><th>Rôle</th><th>Arrivée serveur</th><th>Compte créé</th></tr></thead>
+        <tbody id="membersBody"><tr><td colspan="6"><div class="empty"><div class="spin"></div></div></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MISMATCHES -->
+  <div class="page" id="page-mismatches">
+    <div class="ph"><div class="ph-title">6 Mismatches — Tableau 2</div><div class="ph-sub">Écarts entre attentes utilisateurs et réalité des bots Discord</div></div>
+    <div id="mmList"></div>
+    <div class="card" style="margin-top:14px">
+      <div class="card-title"><div class="ctd"></div>Cadre théorique</div>
+      <p style="font-size:13px;color:var(--t2);line-height:1.7">Ces désalignements sont analysés via la théorie de l'<strong style="color:var(--t1)">Intégrité Contextuelle</strong> (Nissenbaum, 2004), qui définit la vie privée comme un flux d'information approprié, gouverné par des acteurs, des attributs et des principes de transmission. Chaque mismatch représente une violation d'un ou plusieurs de ces principes.<br><span style="font-family:var(--mono);font-size:11px;color:var(--t3)">Chou et al., "Bot Among Us", PoPETs 2026(1), §4.6 + Tableau 2</span></p>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div class="mbg" id="modalBg" onclick="maybeClose(event)">
+  <div class="modal" id="modal">
+    <button class="mclose" onclick="closeModal()">✕</button>
+    <div id="modalBody"><div class="empty"><div class="spin"></div>génération du rapport…</div></div>
+  </div>
+</div>
+
+<script>
+const API = 'http://localhost:5000/api';
+const charts = {};
+
+const $ = id => document.getElementById(id);
+const set = (id, v) => { const e=$(id); if(e) e.textContent=v; };
+
+async function apiFetch(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+async function checkApi() {
+  try {
+    await apiFetch('/overview');
+    $('apiDot').className = 'api-dot ok';
+    $('apiLabel').textContent = 'API connectée · localhost:5000';
+  } catch {
+    $('apiDot').className = 'api-dot err';
+    $('apiLabel').textContent = 'API hors ligne';
+  }
+}
+
+let curPage = 'overview';
+function goto(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  $('page-'+page).classList.add('active');
+  if(el) el.classList.add('active');
+  curPage = page;
+  if(page==='overview')   loadOverview();
+  if(page==='users')      loadUsers();
+  if(page==='members')    loadMembers();
+  if(page==='mismatches') loadMismatches();
+}
+function refreshCurrent() { goto(curPage, document.querySelector('.nav-item.active')); }
+
+/* ── CHART FACTORY ── */
+const baseOpts = {
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#52525b', font:{family:'IBM Plex Mono',size:10}} },
+    y: { grid:{color:'rgba(255,255,255,.05)'}, ticks:{color:'#52525b', font:{family:'IBM Plex Mono',size:10}} }
+  }
+};
+
+function mkChart(id, type, data, opts={}) {
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart($(id), { type, data, options:{...baseOpts,...opts} });
+}
+
+/* ── OVERVIEW ── */
+async function loadOverview() {
+  try {
+    const [ov, st] = await Promise.all([apiFetch('/overview'), apiFetch('/stats')]);
+    $('guildLabel').textContent = 'Serveur : '+(ov.guild_name||'—')+' · surveillance active';
+    set('m-msgs',    ov.total_messages.toLocaleString());
+    set('m-users',   ov.unique_users.toLocaleString());
+    set('m-members', ov.total_members.toLocaleString());
+    set('m-channels',ov.channels_monitored.toLocaleString());
+    set('nc-msg', ov.total_messages);
+    set('nc-usr', ov.unique_users);
+    set('nc-mbr', ov.total_members);
+
+    mkChart('hourlyChart','bar',{
+      labels: Array.from({length:24},(_,i)=>i+'h'),
+      datasets:[{ data:ov.hourly_activity, borderRadius:3, borderSkipped:false,
+        backgroundColor:ov.hourly_activity.map(v=>v>0?'rgba(255,71,87,.75)':'rgba(255,255,255,.04)') }]
+    });
+
+    const cc = ['#ff4757','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4'];
+    mkChart('channelChart','doughnut',{
+      labels: st.by_channel.map(d=>'#'+d.channel_name),
+      datasets:[{ data:st.by_channel.map(d=>d.count), backgroundColor:cc, borderWidth:0, hoverOffset:4 }]
+    },{
+      plugins:{ legend:{ display:true, position:'right',
+        labels:{color:'#a1a1aa',font:{family:'IBM Plex Mono',size:10},boxWidth:9,padding:9} }},
+      cutout:'68%'
+    });
+
+    const mx = ov.top_users[0]?.msg_count||1;
+    $('topUsers').innerHTML = ov.top_users.length
+      ? ov.top_users.map((u,i)=>`
+        <div style="display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
+          <span style="font-family:var(--mono);font-size:10px;color:var(--t3);width:16px">#${i+1}</span>
+          <span style="font-size:13px;font-weight:500;flex:1">${u.author_display_name}</span>
+          <div style="flex:2;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">
+            <div style="width:${Math.round(u.msg_count/mx*100)}%;height:100%;background:var(--red);border-radius:2px"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:11px;color:var(--red);min-width:34px;text-align:right">${u.msg_count}</span>
+        </div>`).join('')
+      : '<div class="empty">Aucun message collecté.</div>';
+  } catch(e){ console.error(e); }
+}
+
+/* ── USERS ── */
+async function loadUsers() {
+  const g = $('usersGrid');
+  g.innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="spin"></div>chargement…</div>';
+  try {
+    const users = await apiFetch('/users');
+    if(!users.length){
+      g.innerHTML='<div class="empty" style="grid-column:1/-1">Aucun utilisateur collecté.<br>Envoyez des messages dans le serveur Discord.</div>';
+      return;
+    }
+    g.innerHTML = users.map(u=>{
+      const rc = u.risk.label==='Élevé'?'rh':u.risk.label==='Modéré'?'rm':'rl';
+      const init = (u.author_display_name||'?')[0].toUpperCase();
+      return `<div class="ucard" onclick="openModal('${u.author_id}')">
+        <div class="uc-hd">
+          <div class="av">${u.author_avatar_url?`<img src="${u.author_avatar_url}" alt="" onerror="this.style.display='none'">`:init}</div>
+          <div class="uc-info"><div class="uc-name">${u.author_display_name}</div><div class="uc-uname">${u.author_username}</div></div>
+          <span class="risk ${rc}">${u.risk.icon} ${u.risk.label}</span>
+        </div>
+        <div class="rbar"><div class="rfill" style="width:${u.risk_score}%;background:${u.risk.color}"></div></div>
+        <div class="ucstats">
+          <div class="ucst"><div class="ucst-l">Messages</div><div class="ucst-v">${u.message_count}</div></div>
+          <div class="ucst"><div class="ucst-l">Canaux</div><div class="ucst-v">${u.channels_used}</div></div>
+          <div class="ucst"><div class="ucst-l">Score</div><div class="ucst-v" style="color:${u.risk.color}">${u.risk_score}</div></div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e){ g.innerHTML='<div class="empty">Erreur API.</div>'; }
+}
+
+/* ── MEMBERS ── */
+async function loadMembers() {
+  const tb = $('membersBody');
+  try {
+    const ms = await apiFetch('/members');
+    if(!ms.length){ tb.innerHTML='<tr><td colspan="6"><div class="empty">Aucun membre collecté.</div></td></tr>'; return; }
+    tb.innerHTML = ms.map(m=>{
+      const init=(m.display_name||'?')[0].toUpperCase();
+      return `<tr>
+        <td><div class="av" style="width:28px;height:28px;font-size:11px">
+          ${m.avatar_url?`<img src="${m.avatar_url}" alt="" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:init}
+        </div></td>
+        <td style="font-weight:500">${m.display_name}</td>
+        <td><span style="font-family:var(--mono);font-size:11px;color:var(--t3)">${m.username}</span></td>
+        <td><span class="tag">${m.top_role||'Membre'}</span></td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--t3)">${(m.joined_at||'').slice(0,10)||'—'}</td>
+        <td style="font-family:var(--mono);font-size:11px;color:var(--t3)">${(m.created_at||'').slice(0,10)||'—'}</td>
+      </tr>`;
+    }).join('');
+  } catch(e){ tb.innerHTML='<tr><td colspan="6"><div class="empty">Erreur API.</div></td></tr>'; }
+}
+
+/* ── MISMATCHES ── */
+const MM = [
+  { type:'Scope — portée des messages', sev:'h', icon:'⊘',
+    ex:'Le bot lit seulement les messages qui le mentionnent directement.',
+    re:'Avec Message Content Intent activé, le bot reçoit et stocke TOUS les messages de tous les canaux accessibles.',
+    ref:'§2.1 — Discord: "Default limited, configurable full access"' },
+  { type:'Consent Model — consentement collectif', sev:'h', icon:'⊘',
+    ex:'Tous les membres ont accepté la présence du bot avant qu\'il rejoigne.',
+    re:'L\'admin peut ajouter ce bot sans consulter les autres membres. Aucun mécanisme de consentement collectif n\'existe sur Discord.',
+    ref:'§5.3.5 — "Recognize That Consent in Group Chats Is Collective"' },
+  { type:'Data Retention — rétention des données', sev:'m', icon:'⚠',
+    ex:'Supprimer un message le fait aussi disparaître pour le bot.',
+    re:'Une fois stocké, le message reste dans la DB SQLite. Discord ne notifie pas les bots des suppressions.',
+    ref:'§4.3 + Telegram bug report #735 cité en §5.2.2' },
+  { type:'Identity Exposure — exposition d\'identité', sev:'h', icon:'⊘',
+    ex:'Le bot voit le contenu des messages mais pas l\'identité de l\'expéditeur.',
+    re:'Chaque message enregistre : username global, display name, avatar, rôle, user_id. Seulement 28% des utilisateurs le savent (§4.3).',
+    ref:'§4.3 — "Only 28% correctly recognize chatbots have access to profiles"' },
+  { type:'Cross-Context Identity — traçabilité cross-serveurs', sev:'m', icon:'⚠',
+    ex:'Le bot ne peut pas suivre un utilisateur entre différents serveurs.',
+    re:'Le user_id Discord est permanent et identique dans tous les serveurs. Re-identification automatique possible.',
+    ref:'§4.6 — "Users have persistent identifiers across groups"' },
+  { type:'Visibility — invisibilité du bot', sev:'h', icon:'⊘',
+    ex:'Le bot est visible seulement quand il envoie un message.',
+    re:'Ce bot collecte silencieusement depuis son arrivée. Seul le label "APP" dans la liste des membres le révèle (~30% ne vérifient jamais, §4.2).',
+    ref:'§5.2.1 — bug Discord : long username masque le label APP' }
+];
+
+function loadMismatches() {
+  $('mmList').innerHTML = MM.map((m,i)=>`
+    <div class="mm-item" id="mm${i}">
+      <div class="mm-head" onclick="toggleMM(${i})">
+        <div class="mm-icon s${m.sev}">${m.icon}</div>
+        <div class="mm-type">${m.type}</div>
+        <span class="mm-sev ${m.sev}">${m.sev==='h'?'Élevé':'Modéré'}</span>
+        <span class="mm-chev">▶</span>
+      </div>
+      <div class="mm-body">
+        <div class="mm-cols">
+          <div><div class="mm-cl">Attente utilisateur</div><div class="mm-ex">${m.ex}</div></div>
+          <div><div class="mm-cl">Réalité démontrée</div><div class="mm-re">${m.re}</div></div>
+        </div>
+        <div class="mm-ref">${m.ref}</div>
+      </div>
+    </div>`).join('');
+  $('mm0').classList.add('open');
+}
+
+function toggleMM(i) { $('mm'+i).classList.toggle('open'); }
+
+/* ── MODAL ── */
+async function openModal(uid) {
+  $('modalBg').classList.add('open');
+  $('modalBody').innerHTML = '<div class="empty"><div class="spin"></div>génération du rapport…</div>';
+  try {
+    const d = await apiFetch('/user/'+uid);
+    const u = d.user;
+    const rc = d.risk.label==='Élevé'?'rh':d.risk.label==='Modéré'?'rm':'rl';
+    const init = (u.author_display_name||'?')[0].toUpperCase();
+
+    const metaRows = Object.entries(d.metadata_collected).map(([k,v])=>`
+      <div class="meta-row"><div class="meta-k">${k}</div><div class="meta-v">${v||'—'}</div></div>`).join('');
+
+    const tlItems = (d.messages||[]).slice(-20).reverse().map(m=>`
+      <div class="tl-row">
+        <span class="tl-t">${(m.timestamp||'').slice(11,19)}</span>
+        <span class="tl-c">#${m.channel_name}</span>
+        <span class="tl-m">${esc(m.content)}</span>
+      </div>`).join('') || '<div class="empty" style="padding:16px">Aucun message.</div>';
+
+    const mmItems = d.mismatches.map(m=>`
+      <div style="padding:9px 11px;border:1px solid var(--line);border-radius:var(--r);margin-bottom:7px;border-left:2px solid ${m.severity==='high'?'var(--red)':'var(--amber)'}">
+        <div style="font-family:var(--mono);font-size:10px;color:${m.severity==='high'?'var(--red)':'var(--amber)'};text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px">${m.type}</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+          <div style="font-size:12px;color:var(--t2)">${m.expectation}</div>
+          <div style="font-size:12px;color:var(--t1);font-weight:500">${m.reality}</div>
+        </div>
+      </div>`).join('');
+
+    $('modalBody').innerHTML = `
+      <div style="display:flex;align-items:center;gap:13px;margin-bottom:20px">
+        <div class="av" style="width:46px;height:46px;font-size:17px;font-weight:600">
+          ${u.author_avatar_url?`<img src="${u.author_avatar_url}" alt="" onerror="this.style.display='none'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:init}
+        </div>
+        <div>
+          <div style="font-size:17px;font-weight:600;letter-spacing:-.02em">${u.author_display_name}</div>
+          <div style="font-family:var(--mono);font-size:11px;color:var(--t3);margin-top:2px">${u.author_username} · ID ${u.author_id}</div>
+        </div>
+        <span class="risk ${rc}" style="margin-left:auto;font-size:11px;padding:5px 10px">${d.risk.icon} Risque ${d.risk.label} — ${d.risk_score}/100</span>
+      </div>
+
+      <div class="mgrid2" style="margin-bottom:18px">
+        <div>
+          <div class="card-title"><div class="ctd"></div>Données collectées</div>
+          <div class="meta-list">${metaRows}</div>
+        </div>
+        <div>
+          <div class="card-title"><div class="ctd"></div>Activité horaire</div>
+          <canvas id="mChart" height="155"></canvas>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px">
+        <div class="card-title"><div class="ctd"></div>20 derniers messages captés par le bot</div>
+        <div class="tl">${tlItems}</div>
+      </div>
+
+      <div>
+        <div class="card-title"><div class="ctd"></div>Mismatches illustrés (Tableau 2)</div>
+        ${mmItems}
+      </div>
+
+      <div style="margin-top:14px;padding:10px 12px;background:var(--blue-dim);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);font-family:var(--mono);font-size:10px;color:var(--t3)">
+        Perspective implémentée : §5.3.3 — "Provide Privacy Reports and Privacy Nudging" — Almuhimedi et al. [1] montrent que de tels rapports augmentent la conscience des risques de vie privée.
+      </div>`;
+
+    const mc = $('mChart')?.getContext('2d');
+    if(mc) new Chart(mc,{ type:'bar', data:{
+      labels:Array.from({length:24},(_,i)=>i+'h'),
+      datasets:[{ data:d.hourly_activity, backgroundColor:'rgba(168,85,247,.7)', borderRadius:2, borderSkipped:false }]
+    }, options:{...baseOpts,plugins:{legend:{display:false}}} });
+
+  } catch(e){
+    $('modalBody').innerHTML='<div class="empty">Erreur lors du chargement.<br>Vérifiez que Flask est actif sur localhost:5000.</div>';
+  }
+}
+
+function maybeClose(e){ if(e.target===$('modalBg')) closeModal(); }
+function closeModal(){ $('modalBg').classList.remove('open'); }
+function esc(t){ return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── INIT ── */
+checkApi();
+loadOverview();
+setInterval(checkApi, 15000);
+setInterval(()=>{ if(curPage==='overview') loadOverview(); }, 10000);
+</script>
+</body>
+</html>
