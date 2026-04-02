@@ -301,6 +301,13 @@ body {
     <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M3 8h10"/><circle cx="8" cy="8" r="6"/></svg>
     6 Mismatches
   </div>
+  <div class="nav-item" onclick="goto('permissions',this)">
+  <svg class="nav-ic" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+    <rect x="3" y="7" width="10" height="7" rx="1"></rect>
+    <path d="M5 7V5a3 3 0 0 1 6 0v2"></path>
+  </svg>
+  Permissions du bot
+</div>
   <div class="sidebar-foot">
     Bot Among Us<br>
     PoPETs 2026(1) · pp. 296–320<br>
@@ -361,6 +368,22 @@ body {
     </div>
   </div>
 
+  <div class="page" id="page-permissions">
+
+  <div class="ph">
+    <div class="ph-title">Permissions du bot</div>
+    <div class="ph-sub">
+      Transparence sur les intents et permissions réels du bot
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 id="permBotName">Bot</h3>
+    <div id="permissionsContent">Chargement...</div>
+  </div>
+
+</div>  
+
 </main>
 
 <!-- MODAL -->
@@ -406,6 +429,7 @@ function goto(page, el) {
   if(page==='users')      loadUsers();
   if(page==='members')    loadMembers();
   if(page==='mismatches') loadMismatches();
+  if(page==='permissions') loadPermissions();
 }
 function refreshCurrent() { goto(curPage, document.querySelector('.nav-item.active')); }
 
@@ -565,6 +589,42 @@ function loadMismatches() {
       </div>
     </div>`).join('');
   $('mm0').classList.add('open');
+}
+
+async function loadPermissions(){
+
+  try{
+
+    const data = await apiFetch('/permissions');
+
+    document.getElementById('permBotName').textContent =
+      "Permissions du bot " + data.bot_name;
+
+    let html = "<h4>Intents activés</h4><ul>";
+
+    Object.values(data.intents).forEach(item=>{
+      html += `<li>${item.label} : <strong>${item.value ? "OUI" : "NON"}</strong></li>`;
+    });
+
+    html += "</ul>";
+
+    html += "<h4>Permissions serveur</h4><ul>";
+
+    Object.values(data.server_permissions).forEach(item=>{
+      html += `<li>${item.label} : <strong>${item.value ? "OUI" : "NON"}</strong></li>`;
+    });
+
+    html += "</ul>";
+
+    document.getElementById("permissionsContent").innerHTML = html;
+
+  }catch(e){
+
+    document.getElementById("permissionsContent").innerHTML =
+      "Impossible de charger les permissions.";
+
+  }
+
 }
 
 function toggleMM(i) { $('mm'+i).classList.toggle('open'); }

@@ -345,6 +345,52 @@ def api_stats():
         "by_day": by_day,
     })
 
+@app.route("/api/permissions")
+def api_permissions():
+    """Expose les intents et permissions du bot pour le dashboard."""
+
+    data = {
+        "bot_name": "BotAmongUs",
+        "intents": {
+            "message_content": {
+                "label": "Lire le contenu des messages",
+                "value": True
+            },
+            "members": {
+                "label": "Voir les membres",
+                "value": True
+            },
+            "presences": {
+                "label": "Voir les présences",
+                "value": True
+            }
+        },
+        "server_permissions": {
+            "view_channel": {
+                "label": "Voir les salons",
+                "value": True
+            },
+            "read_message_history": {
+                "label": "Lire l’historique",
+                "value": True
+            },
+            "send_messages": {
+                "label": "Envoyer des messages",
+                "value": True
+            },
+            "manage_messages": {
+                "label": "Gérer les messages",
+                "value": False
+            },
+            "ban_members": {
+                "label": "Bannir des membres",
+                "value": False
+            }
+        }
+    }
+
+    return jsonify(data)
+
 
 # ─── DASHBOARD ───────────────────────────────────────────────────────────────
 

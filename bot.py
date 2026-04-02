@@ -266,6 +266,43 @@ async def stats(ctx):
         f"🔗 Rapport complet : http://localhost:5000"
     )
 
+@bot.command(name="permissions")
+async def permissions_cmd(ctx):
+    """!permissions — Affiche les intents et permissions réels du bot dans ce serveur."""
+
+    # Intents globaux du bot
+    intents_status = {
+        "Lire le contenu des messages": bot.intents.message_content,
+        "Voir les membres": bot.intents.members,
+        "Voir les présences": bot.intents.presences,
+    }
+
+    # Permissions du bot dans le serveur courant
+    guild_perms = ctx.guild.me.guild_permissions if ctx.guild else None
+
+    server_permissions = {
+        "Voir les salons": guild_perms.view_channel if guild_perms else False,
+        "Lire l’historique": guild_perms.read_message_history if guild_perms else False,
+        "Envoyer des messages": guild_perms.send_messages if guild_perms else False,
+        "Gérer les messages": guild_perms.manage_messages if guild_perms else False,
+        "Bannir des membres": guild_perms.ban_members if guild_perms else False,
+    }
+
+    lines = [f"**Permissions du bot {bot.user.name}**", ""]
+
+    lines.append("**Intents activés :**")
+    for label, value in intents_status.items():
+        lines.append(f"- {label} : {'OUI' if value else 'NON'}")
+
+    lines.append("")
+    lines.append("**Permissions serveur :**")
+    for label, value in server_permissions.items():
+        lines.append(f"- {label} : {'OUI' if value else 'NON'}")
+
+    lines.append("")
+    lines.append("Commande de transparence inspirée de l’article *Bot Among Us*.")
+
+    await ctx.send("\n".join(lines))
 
 # ─── LANCEMENT ───────────────────────────────────────────────────────────────
 
