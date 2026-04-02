@@ -5,7 +5,7 @@ Démo académique basée sur l'article "Bot Among Us" (PoPETs 2026)
 Ce bot collecte les données accessibles par un vrai bot Discord
 et les stocke pour générer un Privacy Report Dashboard.
 
-USAGE ACADÉMIQUE UNIQUEMENT — NE PAS DÉPLOYER EN PRODUCTION
+USAGE ACADÉMIQUE UNIQUEMENT - NE PAS DÉPLOYER EN PRODUCTION
 """
 
 import discord
@@ -15,7 +15,7 @@ from datetime import datetime
 from discord.ext import commands
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
-TOKEN = "VOTRE_TOKEN_ICI"   # Remplacez par votre token Discord
+TOKEN = ""   # Remplacez par votre token Discord
 DB_PATH = "privacy_data.db"
 # ─────────────────────────────────────────────────────────────────────────────
 

@@ -1,11 +1,12 @@
 # BotAmongUs 
-## Démo — PoPETs 2026-0016
+## Démo - PoPETs 2026-0016
 
 ---
 
 ## Installation
 ### 1. Cloner le repo
 `git clone https://github.com/tonpseudo/BotAmongUs.git`
+
 `cd BotAmongUs`
 ### 2. Créer un environnement virtuel
 ```bash 
@@ -17,9 +18,9 @@ venv\Scripts\activate      # Windows
 ### 3. Installer les dépendances
 `pip install -r requirements.txt`
 
-### 4. Ajouter votre token Discord
+### 4. Ajouter votre token Discord dans bot.py
 ```bash 
-DISCORD_TOKEN=VOTRE_TOKEN_ICI
+TOKEN = "" 
 ```
 
 ### 5. Lancer le bot
