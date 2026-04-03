@@ -36,14 +36,14 @@ TOKEN = ""
 
 ## Module 1 - Mode silencieux (ce que les auteurs dénoncent)
 
-le bot lit tout
-le bot collecte tout
-le bot ne parle pas
-le bot n’est pas visible
-le bot ne demande pas de consentement
-le bot ne notifie personne
-le bot stocke les messages même supprimés
-le bot reconstruit l’identité et l’activité
+- le bot lit tout
+- le bot collecte tout
+- le bot ne parle pas
+- le bot n’est pas visible
+- le bot ne demande pas de consentement
+- le bot ne notifie personne
+- le bot stocke les messages même supprimés
+- le bot reconstruit l’identité et l’activité
 
 ## Objectif pédagogique :
 Montrer que les risques décrits dans l’article sont réels, reproductibles et invisibles pour les utilisateurs.
