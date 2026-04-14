@@ -1,6 +1,6 @@
 # BotAmongUs
-#  Discord Transparency & Privacy Demonstration Bot
-## Démo académique — PoPETs 2026
+## Discord Transparency & Privacy Demonstration Bot
+## Démo académique - PoPETs 2026
 Basé sur : "Bot Among Us", PoPETs 2026(1), pp. 296–320.
 
 ---
@@ -40,6 +40,7 @@ Ce projet s’inscrit dans le cadre du cours *Sécurité des Données Personnell
   - activité du bot
   - scores
   - logs anonymisés
+  - données récoltées
   - mode actif
 - API Flask exposant :
   - `/mode`
@@ -48,7 +49,7 @@ Ce projet s’inscrit dans le cadre du cours *Sécurité des Données Personnell
   - `/permissions`
 
 ### 🗄️ Base de données
-- SQLite (ou autre) pour stocker :
+- SQLite pour stocker :
   - logs anonymisés
   - scores
   - événements
@@ -85,17 +86,16 @@ python api.py
 ```
 ### 6 Ouvrir le dashboard Dashboard 
 ```bash
-double-clic ou :
-firefox dashboard.html
+ouvrir dashboard.html sur votre navigateur
 ```
 
 ## 🧪 Commandes disponibles
 Commande	Description
-!permissions	Affiche les permissions, intents et capacités du bot
-!mode	Affiche le mode actuel
-!mode silent	Active le mode transparent/minimal
-!mode perspective	Active le mode analyse/comportement ambigu
-!help	Liste les commandes
+- !permissions	Affiche les permissions, intents et capacités du bot
+- !mode	Affiche le mode actuel
+- !mode silent	Active le mode transparent/minimal
+- !mode perspective	Active le mode analyse/comportement ambigu
+- !help	Liste les commandes
 
 ## 🛡️ Sécurité & Confidentialité
 
