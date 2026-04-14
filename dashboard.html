@@ -44,7 +44,7 @@ body {
   background: var(--bg);
   color: var(--t1);
   display: grid;
-  grid-template-rows: 52px 1fr;
+  grid-template-rows: 52px 24px 1fr;
   grid-template-columns: 210px 1fr;
   min-height: 100vh;
   font-size: 14px;
@@ -119,9 +119,9 @@ body {
 
 /* ── MODE BANNER ── */
 .mode-banner {
-  display: none; padding: 10px 18px; font-family: var(--mono); font-size: 12px;
-  align-items: center; gap: 10px; border-bottom: 1px solid var(--line);
-  grid-column: 1/-1; transition: all .3s;
+  display: none; padding: 3px 18px; font-family: var(--mono); font-size: 11px;
+  align-items: center; gap: 8px; border-bottom: 1px solid var(--line);
+  grid-column: 1/-1; transition: all .3s; height: 24px; line-height: 1;
 }
 .mode-banner.visible { display: flex; }
 .mode-banner.silencieux  { background: var(--mode-sil-bg);  color: var(--mode-sil-col); }
@@ -744,4 +744,4 @@ setInterval(checkApi, 15000);
 setInterval(()=>{ if(curPage==='overview') loadOverview(); }, 10000);
 </script>
 </body>
-</html>g
+</html>
