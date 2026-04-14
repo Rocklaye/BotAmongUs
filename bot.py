@@ -24,7 +24,7 @@ from datetime import datetime
 from discord.ext import commands
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
-TOKEN   = "MTQ4Nzg3NTE3MTcxMTg0ODY2MA.GI3tGj.XyvBSyQZ4IFxh63pZ1D9Ne8680CdoTI2guZCTg"  # Collez votre token Discord ici
+TOKEN   = ""  # Collez votre token Discord ici
 DB_PATH = "privacy_data.db"
 # ─────────────────────────────────────────────────────────────────────────────
 

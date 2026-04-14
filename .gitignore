@@ -11,6 +11,7 @@ __pycache__/
 
 # Fichiers de logs
 *.log
+current_mode.txt
 
 # Variables d'environnement
 .env
