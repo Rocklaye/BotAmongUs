@@ -433,6 +433,22 @@ const charts = {};
 let curPage = 'overview';
 let curMode = 'silencieux';
 
+// convert time 
+function fmtTime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleTimeString('fr-CA', {
+    hour: '2-digit', minute: '2-digit', second: '2-digit',
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
+}
+
+function fmtDatetime(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleString('fr-CA', {
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+  });
+}
+
 const $ = id => document.getElementById(id);
 const set = (id, v) => { const e=$(id); if(e) e.textContent=v; };
 
@@ -677,12 +693,14 @@ async function openModal(uid) {
     const rc=d.risk.label==='Élevé'?'rh':d.risk.label==='Modéré'?'rm':'rl';
     const init=(u.author_display_name||'?')[0].toUpperCase();
 
+    d.metadata_collected["Première activité"] = fmtDatetime(u.first_seen);
+    d.metadata_collected["Dernière activité"]  = fmtDatetime(u.last_seen);
     const metaRows=Object.entries(d.metadata_collected).map(([k,v])=>`
       <div class="meta-row"><div class="meta-k">${k}</div><div class="meta-v">${v||'—'}</div></div>`).join('');
 
     const tlItems=(d.messages||[]).slice(-20).reverse().map(m=>`
       <div class="tl-row">
-        <span class="tl-t">${(m.timestamp||'').slice(11,19)}</span>
+        <span class="tl-t">${fmtTime(m.timestamp)}</span>
         <span class="tl-c">#${m.channel_name}</span>
         <span class="tl-m">${esc(m.content)}</span>
       </div>`).join('')||'<div class="empty" style="padding:16px">Aucun message.</div>';
