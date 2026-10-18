@@ -298,6 +298,66 @@ body {
 </style>
 </head>
 <body>
+<!-- CONNEXION ADMINISTRATEUR -->
+<div id="loginScreen" style="
+  position:fixed;
+  inset:0;
+  z-index:2000;
+  background:#09090b;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family:Arial,sans-serif;
+  color:white;
+">
+  <form id="loginForm" style="
+    background:#18181b;
+    padding:35px;
+    border-radius:12px;
+    width:360px;
+    max-width:90%;
+    border:1px solid #333;
+  ">
+    <h2>BotAmongUs</h2>
+
+    <p style="color:#a1a1aa;margin:15px 0;">
+      Accès administrateur — connectez-vous pour consulter
+      les rapports et gérer le mode du bot.
+    </p>
+
+    <label for="adminPassword">Mot de passe administrateur</label>
+
+    <input
+      id="adminPassword"
+      type="password"
+      required
+      autocomplete="current-password"
+      style="
+        width:100%;
+        padding:12px;
+        margin:12px 0;
+        background:#09090b;
+        border:1px solid #444;
+        border-radius:6px;
+        color:white;
+      "
+    >
+
+    <button id="loginButton" type="submit" style="
+      width:100%;
+      padding:12px;
+      background:#ff4757;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+    ">
+      Se connecter
+    </button>
+
+    <p id="loginError" role="alert" style="color:#ff4757;margin-top:12px;"></p>
+  </form>
+</div>
 
 <!-- TOPBAR -->
 <header id="topbar">
@@ -320,6 +380,7 @@ body {
   <div class="api-badge">
     <div class="api-dot" id="apiDot"></div>
     <span id="apiLabel">connexion…</span>
+    <button class="btn-sm" onclick="logout()">Déconnexion</button>
     <button class="btn-sm" onclick="refreshCurrent()">↻ refresh</button>
   </div>
 </header>
@@ -428,7 +489,8 @@ body {
 </div>
 
 <script>
-const API = 'http://localhost:5000/api';
+const API = '/api';
+let authenticated = false;
 const charts = {};
 let curPage = 'overview';
 let curMode = 'silencieux';
@@ -452,9 +514,21 @@ function fmtDatetime(iso) {
 const $ = id => document.getElementById(id);
 const set = (id, v) => { const e=$(id); if(e) e.textContent=v; };
 
-async function apiFetch(path, opts={}) {
-  const r = await fetch(API + path, opts);
-  if (!r.ok) throw new Error(r.status);
+async function apiFetch(path, opts = {}) {
+  const r = await fetch(API + path, {
+    ...opts,
+    credentials: 'same-origin'
+  });
+
+  if (r.status === 401 && path !== '/login' && path !== '/session') {
+    showLogin();
+    throw new Error('Connexion requise');
+  }
+
+  if (!r.ok) {
+    throw new Error('Erreur API : ' + r.status);
+  }
+
   return r.json();
 }
 
@@ -575,7 +649,7 @@ async function loadOverview() {
       ? ov.top_users.map((u,i)=>`
         <div style="display:flex;align-items:center;gap:11px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">
           <span style="font-family:var(--mono);font-size:10px;color:var(--t3);width:16px">#${i+1}</span>
-          <span style="font-size:13px;font-weight:500;flex:1">${u.author_display_name}</span>
+          <span style="font-size:13px;font-weight:500;flex:1">${esc(u.author_display_name)}</span>
           <div style="flex:2;height:3px;background:var(--bg3);border-radius:2px;overflow:hidden">
             <div style="width:${Math.round(u.msg_count/mx*100)}%;height:100%;background:var(--red);border-radius:2px"></div>
           </div>
@@ -598,7 +672,7 @@ async function loadUsers() {
       return `<div class="ucard" onclick="openModal('${u.author_id}')">
         <div class="uc-hd">
           <div class="av">${u.author_avatar_url?`<img src="${u.author_avatar_url}" alt="" onerror="this.style.display='none'">`:init}</div>
-          <div class="uc-info"><div class="uc-name">${u.author_display_name}</div><div class="uc-uname">${u.author_username}</div></div>
+          <div class="uc-info"><div class="uc-name">${esc(u.author_display_name)}</div><div class="uc-uname">${esc(u.author_username)}</div></div>
           <span class="risk ${rc}">${u.risk.icon} ${u.risk.label}</span>
         </div>
         <div class="rbar"><div class="rfill" style="width:${u.risk_score}%;background:${u.risk.color}"></div></div>
@@ -752,14 +826,90 @@ async function openModal(uid) {
 
 function maybeClose(e){ if(e.target===$('modalBg')) closeModal(); }
 function closeModal(){ $('modalBg').classList.remove('open'); }
-function esc(t){ return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function esc(t) {
+  return String(t ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
+/* ── AUTHENTIFICATION ADMIN ── */
+
+function showLogin() {
+  authenticated = false;
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+
+function showDashboard() {
+  authenticated = true;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminPassword').value = '';
+
+  checkApi();
+  loadOverview();
+  loadMismatches();
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+
+  const password = document.getElementById('adminPassword').value;
+  const error = document.getElementById('loginError');
+  const button = document.getElementById('loginButton');
+
+  error.textContent = '';
+  button.disabled = true;
+
+  try {
+    await apiFetch('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+
+    showDashboard();
+  } catch (e) {
+    error.textContent = 'Mot de passe incorrect ou API indisponible.';
+  } finally {
+    button.disabled = false;
+  }
+});
+async function logout() {
+  try {
+    await apiFetch('/logout', {
+      method: 'POST'
+    });
+  } catch (e) {
+    console.error(e);
+  }
+
+  showLogin();
+}
+
+async function init() {
+  try {
+    const session = await apiFetch('/session');
+
+    if (session.authenticated) {
+      showDashboard();
+    } else {
+      showLogin();
+    }
+  } catch (e) {
+    showLogin();
+  }
+}
 /* ── INIT ── */
-checkApi();
-loadOverview();
-loadMismatches();
-setInterval(checkApi, 15000);
-setInterval(()=>{ if(curPage==='overview') loadOverview(); }, 10000);
+init();
+setInterval(() => {
+  if (authenticated) checkApi();
+}, 15000);
+
+setInterval(() => {
+  if (authenticated && curPage === 'overview') loadOverview();
+}, 10000);
 </script>
 </body>
 </html>

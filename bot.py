@@ -24,7 +24,7 @@ from datetime import datetime
 from discord.ext import commands
 
 # ─── CONFIG ──────────────────────────────────────────────────────────────────
-TOKEN   = ""  # Collez votre token Discord ici
+TOKEN   =  os.environ["DISCORD_TOKEN"]
 DB_PATH = "privacy_data.db"
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -410,6 +410,7 @@ async def on_member_join(member):
 # ══════════════════════════════════════════════════════════════════════════════
 
 @bot.command(name="mode")
+@commands.has_permissions(administrator=True)
 async def cmd_mode(ctx):
     """
     !mode — Affiche le mode actuel et permet de switcher.
@@ -438,7 +439,13 @@ async def cmd_mode(ctx):
 
     print(f"[MODE] Changement → {get_mode().upper()}")
 
-
+@cmd_mode.error
+async def cmd_mode_error(ctx, error):
+    if isinstance(error, commands.MissingPermissions):
+        await ctx.send(
+            "⛔ Seuls les administrateurs peuvent changer le mode du bot."
+        )
+      
 @bot.command(name="permissions")
 async def cmd_permissions(ctx):
     """

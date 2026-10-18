@@ -1,116 +1,130 @@
 # BotAmongUs
-## Discord Transparency & Privacy Demonstration Bot
-## Démo académique - PoPETs 2026
-Basé sur : "Bot Among Us", PoPETs 2026(1), pp. 296–320.
+### Discord Bot Privacy & Transparency Demonstration
 
----
+**Academic Project — Personal Data Security**
 
-BotAmongUs est un bot Discord pédagogique conçu pour démontrer, de manière concrète, les enjeux de **transparence**, **collecte de données**, **permissions**, et **comportements ambigus** des bots dans les communautés en ligne.
+BotAmongUs is an educational Discord bot designed to demonstrate privacy risks associated with automated data collection in online communities.
 
-Ce projet s’inscrit dans le cadre du cours *Sécurité des Données Personnelles* et  s’appuie sur les recommandations du papier 0016 - PoPETs 2026.
+Inspired by the research paper *Bot Among Us* (PoPETs 2026), this project explores how Discord bots can access user information and how transparency mechanisms can improve awareness of data collection practices.
 
---- 
+This project was developed collaboratively as part of a university course. This repository also includes my personal contributions to improving security, administrator authentication, configuration, and documentation.
 
-## 🎯 Objectifs du projet
+## Project Objectives
 
-- Illustrer comment un bot peut **collecter, analyser et exploiter** des données sans que les utilisateurs en soient pleinement conscients.
-- Montrer l’importance de la **transparence**, des **permissions explicites** et du **consentement éclairé**.
-- Comparer deux comportements :
-  - **Mode Silent** : collecte minimale, comportement neutre.
-  - **Mode Perspective** : analyse des messages, scoring, extraction d’informations.
+- Demonstrate the privacy implications of Discord bot permissions and data collection.
+- Compare silent data collection with transparent user notifications.
+- Provide visibility into collected information through a web dashboard.
+- Explore privacy awareness, informed consent, and responsible bot development.
 
----
+## Key Features
 
-## 🧩 Fonctionnalités principales
+### Discord Bot
+- Collection of messages and associated metadata in an authorized test environment.
+- Collection of server member information.
+- Display of bot permissions and capabilities through `!permissions`.
+- Two demonstration modes:
+  - **Silent Mode:** data collection without automatic notifications.
+  - **Perspective Mode:** data collection with transparency notifications.
 
-### 🔐 Gestion des permissions
-- Commande `!permissions` affichant :
-  - les permissions Discord accordées au bot
-  - les intents activés
-  - les capacités de collecte
-  - les limites et garanties de confidentialité
+Both modes collect data; the difference is how users are informed.
 
-### 🔄 Modes de fonctionnement
-- **Module 1** `!mode silent` → bot minimaliste, aucune analyse
-- **Module 2** `!mode perspective` → analyse des messages, scoring, extraction de signaux
-- Stockage du mode actif dans `current_mode.txt`
+### Privacy Dashboard
+- Web interface built with HTML, CSS, and JavaScript.
+- Administrator authentication.
+- Visualization of collected data and activity statistics.
+- User and member information.
+- Privacy reports.
+- Switching between demonstration modes.
 
-### 📊 Dashboard & API
-- Dashboard web (HTML/CSS/JS) affichant :
-  - activité du bot
-  - scores
-  - logs anonymisés
-  - données récoltées
-  - mode actif
-- API Flask exposant :
-  - `/mode`
-  - `/logs`
-  - `/score`
-  - `/permissions`
+### Flask API
+- Backend developed with Python and Flask.
+- API endpoints for authentication, statistics, user information, and mode management.
+- Integration with the SQLite database.
 
-### 🗄️ Base de données
-- SQLite pour stocker :
-  - logs anonymisés
-  - scores
-  - événements
-  - changements de mode
+### SQLite Database
+- Local storage of collected messages and metadata.
+- Server member information.
+- Persistent records used for dashboard analysis.
 
----
+## Technologies
 
-## 🚀 Installation
+**Python · Pycord · Flask · SQLite · HTML · CSS · JavaScript · REST API · Git**
 
-### 1. Cloner le projet
+## Installation
+
+### 1. Clone the repository
+
 ```bash
-git clone https://github.com/Rocklaye/BotAmongUs.git
+git clone https://github.com/Mahaelm25/BotAmongUs.git
 cd BotAmongUs
 ```
 
-### 2. Installer les dépendances
+### 2. Install dependencies
+
 ```bash
-python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Ajouter le token de bot discord 
+### 3. Configure environment variables
 
-`TOKEN   = ""  # Collez votre token Discord ici`
+Create a Discord application and generate a bot token using the Discord Developer Portal.
 
-### 4. Lancer le bot
+Set the token as an environment variable. For Windows CMD:
+
+```cmd
+set "DISCORD_TOKEN=YOUR_DISCORD_BOT_TOKEN"
+```
+
+Configure the Flask secret key and administrator password hash as required by `app.py`. Do not commit credentials or secrets to GitHub.
+
+### 4. Start the Flask application
+
+```bash
+python app.py
+```
+
+### 5. Start the Discord bot
+
+In a separate terminal:
+
 ```bash
 python bot.py
 ```
 
-### 5. Lancer l’API
-```bash
-python api.py
-```
-### 6 Ouvrir le dashboard Dashboard 
-```bash
-ouvrir dashboard.html sur votre navigateur
-```
+### 6. Access the dashboard
 
-## 🧪 Commandes disponibles
-Commande	Description
-- !permissions	Affiche les permissions, intents et capacités du bot
-- !mode	Affiche le mode actuel
-- !mode silent	Active le mode transparent/minimal
-- !mode perspective	Active le mode analyse/comportement ambigu
-- !help	Liste les commandes
+Open:
 
-## 🛡️ Sécurité & Confidentialité
+`http://localhost:5000`
 
-- Les données sont anonymisées dans la base
-- Le bot affiche clairement ce qu’il collecte
-- Le dashboard expose les actions du bot en temps réel
+## Discord Commands
 
-## 📚 Contexte académique
-Ce projet illustre :
+| Command | Description |
+|---|---|
+| `!permissions` | Displays permissions, intents, and data collection information |
+| `!mode` | Switches between Silent and Perspective modes (administrator only) |
+| `!stats` | Displays collected data statistics |
+| `!rapport` | Provides the local dashboard address |
+| `!help` | Lists available commands |
 
-- les risques liés aux bots Discord
-- la facilité de collecter des données personnelles via un bot dans les serveurs discord
-- l’importance de la transparence
-- les bonnes pratiques de développement éthique
+## Privacy & Security Considerations
 
+- Intended for academic demonstration in controlled, authorized environments.
+- Collected data is stored locally in SQLite and is not anonymized by default.
+- The database may contain message content and personally identifiable metadata.
+- The dashboard requires administrator authentication.
+- Bot credentials are loaded from environment variables.
+- Local databases and environment files are excluded through `.gitignore`.
+- Demonstrations should use test data and participants informed about collection.
 
-📄 Licence
-Projet académique - non destiné à un usage commercial.
+**This project is not intended for deployment on real communities without appropriate consent and privacy safeguards.**
+
+## Academic Context
+
+Developed as part of a personal data security course, this project examines the relationship between Discord bot capabilities, data collection, user awareness, and privacy protection.
+
+**Research reference:** *Bot Among Us*, Proceedings on Privacy Enhancing Technologies (PoPETs), 2026.
+
+## License
+
+Academic demonstration project. No separate open-source license is specified.
